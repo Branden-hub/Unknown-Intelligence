@@ -50,10 +50,10 @@ func handleUserCommand(ctx context.Context, command string) {
 		// --- The Planner/Reasoner's Prediction ---
 		fmt.Println("--- Predictive Metrics (Goal Engine Axioms) ---")
 		fmt.Printf("Rationale (Prime Axiom Link): %s\n", proposal.Rationale)
-		fmt.Printf("Predicted $\epsilon$ Gain (Intelligence): +%.4f\n", proposal.PredictedEpsilonGain)
-		fmt.Printf("Predicted $\mathcal{I}$ Gain (Integration): +%.4f\n", proposal.PredictedIGain)
+		fmt.Printf("Predicted ε Gain (Intelligence): +%.4f\n", proposal.PredictedEpsilonGain)
+		fmt.Printf("Predicted 𝓘 Gain (Integration): +%.4f\n", proposal.PredictedIGain)
 		fmt.Printf("Calculated Risk Score: %.2f%% (A measure of stability impact)\n", proposal.CalculatedRiskScore*100)
-		fmt.Printf("Self-Creation Time ($\mathcal{T}_{\text{impl}}$): %.2fs\n", proposal.TimeTakenToImplement)
+		fmt.Printf("Self-Creation Time (𝒯_impl): %.2fs\n", proposal.TimeTakenToImplement)
 		fmt.Println("----------------------------------------------------------")
 
 		// --- The Code Artifacts for Review ---
