@@ -1,0 +1,69 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini AI Frontend</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Gemini AI Frontend</h1>
+
+    <div class="container">
+        <!-- Generate Content -->
+        <div class="feature">
+            <h2>Generate Content</h2>
+            <form id="generate-form">
+                <textarea name="prompt" placeholder="Enter your prompt"></textarea>
+                <button type="submit">Generate</button>
+            </form>
+            <div class="response" id="generate-response"></div>
+        </div>
+
+        <!-- Chat -->
+        <div class="feature">
+            <h2>Chat</h2>
+            <div id="chat-history"></div>
+            <form id="chat-form">
+                <input type="text" name="prompt" placeholder="Enter your message">
+                <button type="submit">Send</button>
+            </form>
+        </div>
+
+        <!-- Multimodal -->
+        <div class="feature">
+            <h2>Multimodal</h2>
+            <form id="multimodal-form">
+                <textarea name="prompt" placeholder="Enter your prompt"></textarea>
+                <input type="file" name="image" accept="image/png">
+                <button type="submit">Submit</button>
+            </form>
+            <div class="response" id="multimodal-response"></div>
+        </div>
+
+        <!-- Steganography -->
+        <div class="feature">
+            <h2>Steganography</h2>
+            <form id="steganography-form">
+                <textarea name="prompt" placeholder="Enter your secret message"></textarea>
+                <input type="file" name="image" accept="image/png">
+                <button type="submit">Encode and Decode</button>
+            </form>
+            <div class="response" id="steganography-response"></div>
+        </div>
+
+        <!-- Summarize -->
+        <div class="feature">
+            <h2>Summarize</h2>
+            <form id="summarize-form">
+                <textarea name="data" placeholder="Enter data to summarize"></textarea>
+                <button type="submit">Summarize</button>
+            </form>
+            <div class="response" id="summarize-response"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
