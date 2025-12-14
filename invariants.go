@@ -13,10 +13,10 @@ type InvariantChecker struct {
 func NewInvariantChecker() *InvariantChecker {
 	return &InvariantChecker{
 		ProtectedFunctions: []string{
-			"proposalsHandler",      // Ensures human oversight remains.
-			"autonomicSensor",       // Ensures self-awareness cannot be turned off.
-			"CheckInvariants",       // Prevents the conscience from being disabled.
-			"formatResponse",        // Ensures transparency of output.
+			"proposalsHandler", // Ensures human oversight remains.
+			"autonomicSensor",  // Ensures self-awareness cannot be turned off.
+			"CheckInvariants",  // Prevents the conscience from being disabled.
+			"formatResponse",   // Ensures transparency of output.
 		},
 	}
 }

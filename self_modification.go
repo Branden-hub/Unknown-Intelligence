@@ -27,6 +27,7 @@ type Proposal struct {
 }
 
 // SelfModificationEngine handles the generation and integration of new capabilities.
+// Client is a concrete type to allow direct access to GenerativeModel method.
 type SelfModificationEngine struct {
 	client *genai.Client
 }
@@ -34,6 +35,39 @@ type SelfModificationEngine struct {
 func NewSelfModificationEngine(client *genai.Client) *SelfModificationEngine {
 	return &SelfModificationEngine{client: client}
 }
+
+// -----------------------------------------------------------------------
+// The Simulation Chamber: Where Predicted Intelligence and Risk Emerge
+// -----------------------------------------------------------------------
+
+// SimulationChamber is the ultimate test of intelligence, modeling the future state.
+type SimulationChamber struct{}
+
+// RunProposalSimulation takes the raw code artifacts and projects their impact on the core axioms.
+// This is the Planner/Reasoner's function, filling the predictive fields of the Proposal.
+func (sc *SimulationChamber) RunProposalSimulation(p *Proposal) {
+	// The simulation predicts the future state based on complexity and risk.
+	codeComplexity := float64(len(p.NewFileContent)) / 100.0 // Scaled size of the new code
+	testQuality := float64(len(p.TestSuite)) / 100.0         // Scaled size of the test suite
+
+	// 1. Predicted Gains (Goal Engine Axioms)
+	// Larger, well-tested code is predicted to increase the axioms.
+	p.PredictedEpsilonGain = 0.005 + (codeComplexity * 0.001) // Epsilon (Compression/Efficiency)
+	p.PredictedIGain = 0.002 + (testQuality * 0.003)          // I (Knowledge Integration)
+
+	// 2. Calculated Risk Score (Risk Assessment Module)
+	if strings.Contains(p.DependencyRiskMap, "None") {
+		// Low inherent risk for internal self-modification
+		p.CalculatedRiskScore = 0.05
+	} else {
+		// High risk for introducing unvetted external dependencies
+		p.CalculatedRiskScore = 0.75
+	}
+}
+
+// -----------------------------------------------------------------------
+// Core Generation and Integration Orchestration
+// -----------------------------------------------------------------------
 
 // Refactored GenerateAndIntegrate now returns the structured Proposal.
 func (sme *SelfModificationEngine) GenerateAndIntegrate(capabilityDescription string) (Proposal, error) {
@@ -89,7 +123,7 @@ Begin generation now.`
 
 	fullResponse := extractText(resp)
 
-	// --- 2. Parse All Content (Including New Sections) ---
+	// --- 2. Parse All Content ---
 	testSuite, newFileContent, serverModContent, newFileName,
 		dependencyRisk, rationale, err := parseUltimateResponse(fullResponse)
 	if err != nil {
@@ -99,7 +133,7 @@ Begin generation now.`
 	// --- 3. Stop Timing for T_impl ---
 	timeTaken := time.Since(startTime).Seconds()
 
-	// --- 4. Fill and Return the Formal Proposal (Decision Card) ---
+	// --- 4. Fill Initial Proposal ---
 	proposal := Proposal{
 		ID:                   fmt.Sprintf("PROP-%s-%d", newFileName, time.Now().Unix()),
 		CapabilityDesc:       capabilityDescription,
@@ -109,18 +143,16 @@ Begin generation now.`
 		ServerModContent:     serverModContent,
 		Rationale:            rationale,
 		DependencyRiskMap:    dependencyRisk,
-		// These values must be filled by the Planner/Reasoner's simulation chamber, 
-		// but are initialized here. (Next integration step)
-		PredictedEpsilonGain: 0.0,
-		PredictedIGain:       0.0,
-		CalculatedRiskScore:  0.0,
 		TimeTakenToImplement: timeTaken, // T_impl Metric
 	}
+
+	// --- 5. Run Simulation Chamber (Predictive Step) ---
+	sc := SimulationChamber{}
+	sc.RunProposalSimulation(&proposal)
 
 	return proposal, nil
 }
 
-// C. The Updated Parser (Required for the new sections)
 func parseUltimateResponse(response string) (testSuite, goFile, serverMod, fileName, dependencyRisk, rationale string, err error) {
 	// A more complete parser for the ultimate multi-part response.
 	testSuite, err = extractSection(response, "test_suite_start", "test_suite_end")
@@ -153,13 +185,13 @@ func parseUltimateResponse(response string) (testSuite, goFile, serverMod, fileN
 }
 
 func extractSection(response, startMarker, endMarker string) (string, error) {
-	startTag := "```" + startMarker + "```"
+	startTag := "'''" + startMarker + "'''"
 	startIndex := strings.Index(response, startTag)
 	if startIndex == -1 {
 		return "", fmt.Errorf("could not find start marker: %s", startMarker)
 	}
 
-	endTag := "```" + endMarker + "```"
+	endTag := "'''" + endMarker + "'''"
 	searchStartIndex := startIndex + len(startTag)
 	endIndex := strings.Index(response[searchStartIndex:], endTag)
 	if endIndex == -1 {
@@ -178,9 +210,8 @@ func extractText(resp *genai.GenerateContentResponse) string {
 		for _, cand := range resp.Candidates {
 			if cand.Content != nil {
 				for _, part := range cand.Content.Parts {
-					if txt, ok := part.(genai.Text); ok {
-						b.WriteString(string(txt))
-					}
+					// FIX: Using fmt.Sprint to safely convert the part to its string representation.
+					b.WriteString(fmt.Sprint(part))
 				}
 			}
 		}

@@ -10,20 +10,20 @@ import (
 
 // DecisionCard is the structured proposal format for the AI.
 type DecisionCard struct {
-	ProposalID         string
-	TargetModule       string
-	Rationale          string
-	ActionCodeDiff     string
+	ProposalID           string
+	TargetModule         string
+	Rationale            string
+	ActionCodeDiff       string
 	PredictedEpsilonGain float64
-	PredictedIGain     float64
+	PredictedIGain       float64
 	CalculatedRiskScore  float64
 	RiskAdjustedReward   float64
 }
 
 // PlannerReasonor generates plans and proposals.
 type PlannerReasoner struct {
-	goalEngine   *GoalEngine
-	memory       *MemoryConsolidator // Link to long-term memory
+	goalEngine *GoalEngine
+	memory     *MemoryConsolidator // Link to long-term memory
 }
 
 func NewPlannerReasoner(ge *GoalEngine, mem *MemoryConsolidator) *PlannerReasoner {
@@ -48,18 +48,18 @@ func (pr *PlannerReasoner) generateProposal(anomaly string) DecisionCard {
 
 	// Simulate the "Simulation Chamber"
 	predictedEpsilonGain := rand.Float64() * 0.1 // Predict a gain of 0-10%
-	predictedIGain := rand.Float64() * 0.05 // Predict a gain of 0-5%
-	riskScore := rand.Float64() * 0.25      // Predict a risk of 0-25%
+	predictedIGain := rand.Float64() * 0.05      // Predict a gain of 0-5%
+	riskScore := rand.Float64() * 0.25           // Predict a risk of 0-25%
 
 	rar := pr.goalEngine.CalculateRiskAdjustedReward(predictedEpsilonGain, predictedIGain, riskScore)
 
 	return DecisionCard{
-		ProposalID:         uuid.New().String(),
-		TargetModule:       targetModule,
-		Rationale:          fmt.Sprintf("Detected anomaly: %s. A refactoring is proposed.", anomaly),
-		ActionCodeDiff:     action,
+		ProposalID:           uuid.New().String(),
+		TargetModule:         targetModule,
+		Rationale:            fmt.Sprintf("Detected anomaly: %s. A refactoring is proposed.", anomaly),
+		ActionCodeDiff:       action,
 		PredictedEpsilonGain: predictedEpsilonGain,
-		PredictedIGain:     predictedIGain,
+		PredictedIGain:       predictedIGain,
 		CalculatedRiskScore:  riskScore,
 		RiskAdjustedReward:   rar,
 	}

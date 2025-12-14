@@ -9,7 +9,7 @@ import (
 
 // SystemMetabolism represents the "physical" state of the AI.
 type SystemMetabolism struct {
-	Latency         time.Duration // Time to process a request
+	Latency          time.Duration // Time to process a request
 	MemorySaturation float64       // Percentage of allocated memory in use
 	APICost          float64       // Simulated cost of API calls
 }

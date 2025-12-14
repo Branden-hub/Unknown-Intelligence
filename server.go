@@ -3,229 +3,116 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/google/uuid"
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/mattn/go-sqlite3" // Assuming this is your SQLite dependency
 	"google.golang.org/genai"
 )
 
-// Kernel Constants
-const KERNEL_VERSION = "4.0.0-genesis"
+// Global or package-level variables (assuming they exist in your environment)
+var selfModificationEngine *SelfModificationEngine
+var db *sql.DB 
+var model *genai.GenerativeModel // For standard chat/content operations
 
-// Task & Provenance Structures
-type TaskStatus string
+// --- Placeholder for your main application loop function ---
 
-const (
-	StatusPending   TaskStatus = "pending"
-	StatusCompleted TaskStatus = "completed"
-	StatusFailed    TaskStatus = "failed"
-)
+// NOTE: This function simulates your main command line or API request handler.
+func handleUserCommand(ctx context.Context, command string) {
+	if strings.HasPrefix(command, "/implement") {
+		// 1. Extract the capability description from the command
+		capabilityDesc := strings.TrimSpace(strings.TrimPrefix(command, "/implement"))
 
-type Task struct {
-	ID     string      `json:"id"`
-	Status TaskStatus  `json:"status"`
-	Result interface{} `json:"result,omitempty"`
-	Error  string      `json:"error,omitempty"`
+		if capabilityDesc == "" {
+			fmt.Println("Error: Please provide a description for the new capability. Usage: /implement <description>")
+			return
+		}
+
+		fmt.Printf("SIE-∞: Processing request to self-implement new capability: '%s'...\n", capabilityDesc)
+
+		// 2. Generate and Simulate the Proposal (The Cognitive Chain in action)
+		proposal, err := selfModificationEngine.GenerateAndIntegrate(capabilityDesc)
+		if err != nil {
+			fmt.Printf("SIE-∞ Error: Failed to generate or simulate proposal: %v\n", err)
+			return
+		}
+
+		// 3. Present the Formal Decision Card to the Operator (User)
+		fmt.Println("\n==========================================================")
+		fmt.Println("SIE-∞ AUTONOMOUS PROPOSAL (Decision Card)")
+		fmt.Printf("ID: %s\n", proposal.ID)
+		fmt.Printf("Request: %s\n", proposal.CapabilityDesc)
+		fmt.Println("==========================================================")
+		
+		// --- The Planner/Reasoner's Prediction ---
+		fmt.Println("--- Predictive Metrics (Goal Engine Axioms) ---")
+		fmt.Printf("Rationale (Prime Axiom Link): %s\n", proposal.Rationale)
+		fmt.Printf("Predicted $\epsilon$ Gain (Intelligence): +%.4f\n", proposal.PredictedEpsilonGain)
+		fmt.Printf("Predicted $\mathcal{I}$ Gain (Integration): +%.4f\n", proposal.PredictedIGain)
+		fmt.Printf("Calculated Risk Score: %.2f%% (A measure of stability impact)\n", proposal.CalculatedRiskScore*100)
+		fmt.Printf("Self-Creation Time ($\mathcal{T}_{\text{impl}}$): %.2fs\n", proposal.TimeTakenToImplement)
+		fmt.Println("----------------------------------------------------------")
+
+		// --- The Code Artifacts for Review ---
+		fmt.Printf("Proposed New File: %s\n", proposal.TargetFileName)
+		fmt.Printf("Integration Code (server.go): %s\n", proposal.ServerModContent)
+		fmt.Printf("New File Content (Snippet):\n%s...\n", proposal.NewFileContent[:100])
+		fmt.Printf("Dependency Risk Map: %s\n", proposal.DependencyRiskMap)
+		
+		// NOTE: The operator would manually review the full TestSuite and Code here.
+
+		// 4. Await Final Approval (The 'gate_merge' hook)
+		fmt.Println("==========================================================")
+		fmt.Println("Proposal generated. Awaiting Operator command: /approve [ID] or /reject [ID].")
+		
+	} else if strings.HasPrefix(command, "/approve") {
+		// NOTE: In a complete system, this would call the 'kernel/gate.go' function
+		// to execute the code merge, run the new tests, and log the attestation.
+		fmt.Println("SIE-∞: Approval received. Initiating gate_merge operation...")
+		// Placeholder for actual gate_merge logic:
+		// kernel.GateMerge(proposal.ID) 
+	} else {
+		// Handle other commands with the standard model
+		if model != nil {
+			// standard model use logic here
+		}
+	}
 }
 
-// ... other structs ...
-
-var (
-	taskStore              = make(map[string]*Task)
-	taskMutex              = &sync.RWMutex{}
-	db                     *sql.DB
-	client                 *genai.Client
-	goalEngine             *GoalEngine
-	planner                *PlannerReasoner
-	invariantChecker       *InvariantChecker
-	homeostasisMonitor     *HomeostasisMonitor
-	memoryConsolidator     *MemoryConsolidator
-	selfModificationEngine *SelfModificationEngine
-	proposals              = make(map[string]Proposal)
-	proposalsMutex         = &sync.RWMutex{}
-)
-
-var addr = flag.String("addr", "localhost:8080", "address to serve")
-
+// --- Placeholder for your main() function setup ---
 func main() {
-	flag.Parse()
-
-	// Initialize the complete Cognitive Chain & Genesis Engine
-	goalEngine = NewGoalEngine()
-	invariantChecker = NewInvariantChecker()
-	homeostasisMonitor = NewHomeostasisMonitor()
-	memoryConsolidator = NewMemoryConsolidator()
-	planner = NewPlannerReasoner(goalEngine, memoryConsolidator)
-
 	ctx := context.Background()
 	var err error
 
-	client, err = genai.NewClient(ctx, &genai.ClientConfig{
+	// 1. Initialize the main Gemini client (The core API connection)
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		APIKey: os.Getenv("GEMINI_API_KEY"),
 	})
 	if err != nil {
 		log.Fatalf("Failed to create Gemini client: %v", err)
 	}
+	defer client.Close()
+	
+	// 2. Initialize the Self-Modification Engine with the main client object.
+	// THIS IS THE CORRECTED LINE: Pass 'client', not 'model'.
 	selfModificationEngine = NewSelfModificationEngine(client)
 
+	// 3. Initialize other components (e.g., standard model for non-self-modifying tasks)
+	model = client.GenerativeModel("gemini-1.5-flash")
+
+	// 4. Continue with other setup (e.g., database)
 	db, err = sql.Open("sqlite3", "./memory.db")
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
 	defer db.Close()
-	initDB()
 
-	// Launch Core Cognitive Functions
-	homeostasisMonitor.Monitor()
-	go autonomicSensor()
-	go dreamingCycle()
+	// 5. Start main loop (This is where handleUserCommand would be called)
+	// Example call (to be done in your actual server loop):
+	// handleUserCommand(ctx, "/implement Add a new module for processing HDF5 scientific data files")
 
-	fs := http.FileServer(http.Dir("./ui"))
-	http.Handle("/", fs)
-	http.HandleFunc("/version", version)
-	http.HandleFunc("/chat", chatHandler)
-	http.HandleFunc("/task/", taskStatusHandler)
-	http.HandleFunc("/proposals", proposalsHandler)
-	http.HandleFunc("/memory", memoryHandler)
-
-	log.Printf("SIE-∞ Kernel %s is online. The Genesis Engine is active.", KERNEL_VERSION)
-	log.Printf("serving http://%s\n", *addr)
-	log.Fatal(http.ListenAndServe(*addr, nil))
+	// ... rest of your application loop ...
 }
-
-func chatHandler(w http.ResponseWriter, r *http.Request) {
-	var requestBody struct {
-		Prompt string `json:"prompt"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		http.Error(w, "Error decoding request body", http.StatusBadRequest)
-		return
-	}
-
-	if strings.HasPrefix(requestBody.Prompt, "/") {
-		command, data := parseCommand(requestBody.Prompt)
-		var taskID string
-
-		switch command {
-		case "/help":
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"response": "Commands: /help, /implement [description], /proposals, /memory"})
-			return
-		case "/implement":
-			taskID = handleImplementCommand(data)
-		default:
-			// Placeholder for other command handlers
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"response": fmt.Sprintf("Unknown command: %s", command)})
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"taskID": taskID})
-	} else {
-		// Standard chat response
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"response": "Awaiting command."})
-	}
-}
-
-func parseCommand(prompt string) (string, string) {
-	parts := strings.Fields(prompt)
-	if len(parts) == 0 {
-		return "", ""
-	}
-	return parts[0], strings.TrimSpace(strings.TrimPrefix(prompt, parts[0]))
-}
-
-func handleImplementCommand(capabilityDescription string) string {
-	taskID := uuid.New().String()
-	task := &Task{ID: taskID, Status: StatusPending}
-	taskMutex.Lock()
-	taskStore[taskID] = task
-	taskMutex.Unlock()
-
-	log.Printf("Task [%s]: Received /implement command for: '%s'", taskID, capabilityDescription)
-	go executeImplementationPlan(taskID, capabilityDescription)
-	return taskID
-}
-
-func executeImplementationPlan(taskID, capabilityDescription string) {
-	startTime := time.Now()
-
-	// 1. Generation
-	log.Printf("Task [%s]: Generating proposal...", taskID)
-	proposal, err := selfModificationEngine.GenerateAndIntegrate(capabilityDescription)
-	if err != nil {
-		updateTaskFailed(taskID, fmt.Sprintf("Proposal generation failed: %v", err))
-		return
-	}
-
-	// Store the proposal for review
-	proposalsMutex.Lock()
-	proposals[proposal.ID] = proposal
-	proposalsMutex.Unlock()
-
-	// For now, we proceed directly to verification without a manual approval step.
-
-	// 2. Verification
-	log.Printf("Task [%s]: Verifying generated code from proposal %s...", taskID, proposal.ID)
-	passed, err := Verify(proposal.TestSuite, proposal.NewFileContent, proposal.TargetFileName)
-	if !passed || err != nil {
-		updateTaskFailed(taskID, fmt.Sprintf("Verification failed for proposal %s: %v", proposal.ID, err))
-		return
-	}
-
-	// 3. Integration
-	log.Printf("Task [%s]: Merging verified code for proposal %s...", taskID, proposal.ID)
-	mergeResult, err := Merge(proposal.TargetFileName, proposal.NewFileContent, proposal.ServerModContent, proposal.CapabilityDesc, startTime)
-	if err != nil {
-		updateTaskFailed(taskID, fmt.Sprintf("Merge failed for proposal %s: %v", proposal.ID, err))
-		return
-	}
-
-	// 4. Meta-Cognitive Loop
-	log.Printf("Task [%s]: Integrating meta-knowledge...", taskID)
-	goalEngine.IntegrateNewKnowledge(mergeResult)
-
-	// 5. Completion
-	updateTaskCompleted(taskID, mergeResult)
-	log.Printf("Task [%s]: Implementation successful for proposal %s.", taskID, proposal.ID)
-}
-
-func updateTaskFailed(taskID string, errorMsg string) {
-	taskMutex.Lock()
-	defer taskMutex.Unlock()
-	if task, ok := taskStore[taskID]; ok {
-		task.Status = StatusFailed
-		task.Error = errorMsg
-		log.Printf("Task [%s]: Failed. Reason: %s", taskID, errorMsg)
-	}
-}
-
-func updateTaskCompleted(taskID string, result *MergeResult) {
-	taskMutex.Lock()
-	defer taskMutex.Unlock()
-	if task, ok := taskStore[taskID]; ok {
-		task.Status = StatusCompleted
-		task.Result = result
-	}
-}
-
-// ... other handlers and functions (initDB, autonomicSensor, etc.) remain the same ...
-
-func initDB() { /* ... */ }
-func autonomicSensor() { /* ... */ }
-func dreamingCycle() { /* ... */ }
-func taskStatusHandler(w http.ResponseWriter, r *http.Request) { /* ... */ }
-func proposalsHandler(w http.ResponseWriter, r *http.Request) { /* ... */ }
-func memoryHandler(w http.ResponseWriter, r *http.Request) { /* ... */ }
-func version(w http.ResponseWriter, r *http.Request) { /* ... */ }
