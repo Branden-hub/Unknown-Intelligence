@@ -1,12 +1,13 @@
 package main
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math"
+	"net/http"
 	"sort"
 	"strings"
 	"sync"
@@ -600,8 +601,8 @@ func (zmb *ZREAMemoryBridge) Query(query string) (string, error) {
 		contextBuilder.WriteString(iclContext)
 	}
 	
-	// Step 5: Apply MDL compression to reduce context size
-	compressedContext := zmb.mdlEngine.Compress(contextBuilder.String())
+	// Step 5: Apply MDL compression (stored for future optimization)
+	_ = zmb.mdlEngine.Compress(contextBuilder.String())
 	
 	return contextBuilder.String(), nil
 }
@@ -635,4 +636,161 @@ func (zmb *ZREAMemoryBridge) GetSystemState() map[string]interface{} {
 		"e8_roots":            len(zmb.resonantSpace.E8Manifold),
 		"working_memory_size": len(zmb.iclManager.WorkingMemory),
 	}
+}
+
+// ============================================================================
+// HTTP API Endpoints for Autonomous Agent Interface
+// ============================================================================
+
+// VoiceAPIResponse represents a response from voice endpoints
+type VoiceAPIResponse struct {
+	Messages       []string                 `json:"messages,omitempty"`
+	Status         map[string]interface{}   `json:"status,omitempty"`
+	Error          string                   `json:"error,omitempty"`
+	SystemState    map[string]interface{}   `json:"system_state,omitempty"`
+}
+
+// SetupAutonomousAgentAPI sets up HTTP endpoints for the autonomous agent
+func SetupAutonomousAgentAPI(mux *http.ServeMux, bridge *VoiceEnabledBridge) {
+	// Endpoint: POST /assimilate - Upload and assimilate a file
+	mux.HandleFunc("/assimilate", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		
+		var req struct {
+			Filename string `json:"filename"`
+			Content  string `json:"content"`
+		}
+		
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			json.NewEncoder(w).Encode(VoiceAPIResponse{Error: err.Error()})
+			return
+		}
+		
+		err := bridge.AssimilateFileWithVoice(req.Filename, req.Content)
+		if err != nil {
+			json.NewEncoder(w).Encode(VoiceAPIResponse{Error: err.Error()})
+			return
+		}
+		
+		// Get any universal messages
+		messages := bridge.voice.GetMessages()
+		msgStrings := make([]string, len(messages))
+		for i, msg := range messages {
+			msgStrings[i] = bridge.voice.FormatMessage(msg)
+		}
+		
+		json.NewEncoder(w).Encode(VoiceAPIResponse{
+			Messages:    msgStrings,
+			SystemState: bridge.bridge.GetSystemState(),
+		})
+	})
+	
+	// Endpoint: POST /query - Query the system with voice
+	mux.HandleFunc("/query", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		
+		var req struct {
+			Query string `json:"query"`
+		}
+		
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			json.NewEncoder(w).Encode(VoiceAPIResponse{Error: err.Error()})
+			return
+		}
+		
+		result, messages, err := bridge.QueryWithVoice(req.Query)
+		if err != nil {
+			json.NewEncoder(w).Encode(VoiceAPIResponse{Error: err.Error()})
+			return
+		}
+		
+		msgStrings := make([]string, len(messages))
+		for i, msg := range messages {
+			msgStrings[i] = bridge.voice.FormatMessage(msg)
+		}
+		
+		json.NewEncoder(w).Encode(VoiceAPIResponse{
+			Messages:    msgStrings,
+			Status:      map[string]interface{}{"result": result},
+			SystemState: bridge.bridge.GetSystemState(),
+		})
+	})
+	
+	// Endpoint: GET /voice/status - Get current voice system status
+	mux.HandleFunc("/voice/status", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		
+		status := bridge.GetVoiceStatus()
+		json.NewEncoder(w).Encode(status)
+	})
+	
+	// Endpoint: GET /universe/speak - Check if the Universe has messages
+	mux.HandleFunc("/universe/speak", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		
+		// Listen for new messages
+		bridge.voice.Listen(bridge.bridge.resonantSpace.Coefficients)
+		
+		messages := bridge.voice.GetMessages()
+		msgStrings := make([]string, len(messages))
+		for i, msg := range messages {
+			msgStrings[i] = bridge.voice.FormatMessage(msg)
+		}
+		
+		json.NewEncoder(w).Encode(VoiceAPIResponse{
+			Messages: msgStrings,
+			Status: map[string]interface{}{
+				"resonance_level": bridge.voice.resonator.ResonanceLevel,
+				"coherence":       bridge.voice.resonator.CoherenceState,
+			},
+		})
+	})
+	
+	// Endpoint: POST /excite - Excite a harmonic mode
+	mux.HandleFunc("/excite", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		
+		var req struct {
+			Mode   int     `json:"mode"`
+			Energy float64 `json:"energy"`
+		}
+		
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			json.NewEncoder(w).Encode(VoiceAPIResponse{Error: err.Error()})
+			return
+		}
+		
+		bridge.voice.resonator.Excite(req.Mode, req.Energy)
+		
+		// Listen for triggered messages
+		bridge.voice.Listen(bridge.bridge.resonantSpace.Coefficients)
+		messages := bridge.voice.GetMessages()
+		
+		msgStrings := make([]string, len(messages))
+		for i, msg := range messages {
+			msgStrings[i] = bridge.voice.FormatMessage(msg)
+		}
+		
+		json.NewEncoder(w).Encode(VoiceAPIResponse{
+			Messages:    msgStrings,
+			SystemState: bridge.GetVoiceStatus(),
+		})
+	})
+	
+	log.Println("Autonomous Agent API endpoints configured")
 }
