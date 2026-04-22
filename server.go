@@ -10,7 +10,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"google.golang.org/api/option"
-	"google.golang.org/genai/v0.4.0"
+	"google.golang.org/genai"
 )
 
 // Proposal struct to hold the details of a self-modification proposal
