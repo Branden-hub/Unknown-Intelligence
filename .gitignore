@@ -1,0 +1,15 @@
+```
+# Go-specific ignores
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.test
+*.prof
+*.mod
+*.sum
+coverage.out
+```
