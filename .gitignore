@@ -1,15 +1,32 @@
 ```
-# Go-specific ignores
+# Dependencies
+vendor/
+
+# Compiled and build artifacts
 *.o
-*.a
-*.so
-*.dylib
-*.dll
-*.exe
+*.obj
 *.out
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Go-specific
 *.test
 *.prof
-*.mod
-*.sum
-coverage.out
 ```
